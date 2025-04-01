@@ -16,7 +16,7 @@ SHAPEFILE_PATH = join(root_folder, "lines", "shps_4326", "CWS_Roads_4326.shp")
 output_folder = join(root_folder, "roadPoints") # output CSV files
 EARTH_RADIUS = 6371e3  # in meters
 DISTANCE_DELTA = 0.0001  # used for interpolating points along the road
-PERPENDICULAR_DISTANCE = 30  # distance for calculating field points
+PERPENDICULAR_DISTANCE = 15  # 30m distance for calculating field points
 
 def compute_bearing(from_point, to_point):
     """Calculate the bearing from one geographic point to another."""
@@ -50,8 +50,8 @@ def process_road_data(shapefile_path):
             print(e)
 
         save_to_csv(road_points, join(output_folder, f"roadPointsNW4_{geo_idx}.csv"), "y,x,b,x1,y1,x2,y2")
-        # save_to_csv(field_points, join(output_folder, f"roadPoints/fieldPointsNW4_{geo_idx}.csv"), "y,x,b,yr,xr")
-        # save_to_csv(original_points, join(output_folder, f"roadPoints/osmRoadsNW4_{geo_idx}.csv"), "y,x")
+        # save_to_csv(field_points, join(output_folder, f"fieldPointsNW4_{geo_idx}.csv"), "y,x,b,yr,xr")
+        # save_to_csv(original_points, join(output_folder, f"osmRoadsNW4_{geo_idx}.csv"), "y,x")
 
 def save_to_csv(data, filename, header):
     """Save data to a CSV file."""
@@ -74,15 +74,21 @@ def process_line_points(line, road_points, field_points):
     for j, (x, y) in enumerate(line.coords):
         if j > 3 and j< len(line.coords)-3:
 
-            from_point = (old_x, old_y)
-            to_point = (x, y)
+            from_point = (old_y, old_x)#(old_x, old_y)
+            to_point = (y, x)#(x, y)
             bearing = compute_bearing(from_point, to_point)
             p1 = compute_point_on_field(to_point, (bearing + 90) % 360, PERPENDICULAR_DISTANCE)
             p2 = compute_point_on_field(to_point, (bearing + 270) % 360, PERPENDICULAR_DISTANCE)
             field_points.append((p1[0], p1[1], (bearing + 90) % 360, x, y))
             field_points.append((p2[0], p2[1], (bearing + 270) % 360, x, y))
-            road_points.append((x, y, bearing, p1[0], p1[1], p2[0], p2[1]))
+            road_points.append((y,x,bearing,p1[1],p1[0],p2[1],p2[0]))#(x, y, bearing, p1[0], p1[1], p2[0], p2[1]))
         old_x, old_y = x, y
 
 if __name__ == "__main__":
     process_road_data(SHAPEFILE_PATH)
+    # print(compute_bearing((14.096708, 77.366654), (14.096716, 77.366554)))
+    # print(compute_point_on_field((14.096716, 77.366554), (333.1840360399445+90)%360, 30))
+    # print(compute_bearing((22.691664, 86.110429), (22.691653, 86.110529))) # 261.8141881821835
+    # print(compute_bearing((86.110429, 22.691664), (86.110529, 22.691653))) # 1.7609774839085048
+    # print(compute_point_on_field((22.691507,86.113419),(262.591463+90)%360,30))
+    # print(compute_point_on_field((22.694224,86.115453),(3.754053+90)%360,30))
